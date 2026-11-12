@@ -25,8 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = ROOT / "models"
 
 # 1. Carga de artefactos serializados (una sola vez en memoria al importar el modulo)
-MODELO_FALLA = joblib.load(MODELS_DIR / "modelo_falla.joblib")
-MODELO_VIDA = joblib.load(MODELS_DIR / "modelo_vida_util.joblib")
+MODELO_FALLA = joblib.load(MODELS_DIR / "modelo_battery_guard.joblib")
+MODELO_VIDA = joblib.load(MODELS_DIR / "modelo_battery_guard_vida_util.joblib")
 IMPUTADOR = joblib.load(MODELS_DIR / "imputer.joblib")
 CONFIG = json.loads((MODELS_DIR / "model_config.json").read_text(encoding="utf-8"))
 SCHEMA = json.loads((MODELS_DIR / "feature_schema.json").read_text(encoding="utf-8"))

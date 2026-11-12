@@ -372,8 +372,8 @@ def main() -> None:
 
     # ---------------- Serializacion
     log.info("-" * 100)
-    joblib.dump(winner["model"], out_dir / "modelo_falla.joblib")
-    joblib.dump(reg_winner["model"], out_dir / "modelo_vida_util.joblib")
+    joblib.dump(winner["model"], out_dir / "modelo_battery_guard.joblib")
+    joblib.dump(reg_winner["model"], out_dir / "modelo_battery_guard_vida_util.joblib")
     joblib.dump(lr["model"], out_dir / "modelo_baseline_logistica.joblib")
     joblib.dump(lr["model"].named_steps["prep"].named_transformers_["num"], out_dir / "scaler.joblib")
     config = {
@@ -384,8 +384,8 @@ def main() -> None:
         "test_metrics": winner["test"], "test_mae_vida_util": reg_winner["test"]["mae"],
     }
     (out_dir / "model_config.json").write_text(json.dumps(config, indent=2, ensure_ascii=False, default=float))
-    log.info(f"[SUCCESS] Modelo de falla serializado en: {a.output.rstrip('/')}/modelo_falla.joblib")
-    log.info(f"[SUCCESS] Modelo de vida util serializado en: {a.output.rstrip('/')}/modelo_vida_util.joblib")
+    log.info(f"[SUCCESS] Modelo de falla serializado en: {a.output.rstrip('/')}/modelo_battery_guard.joblib")
+    log.info(f"[SUCCESS] Modelo de vida util serializado en: {a.output.rstrip('/')}/modelo_battery_guard_vida_util.joblib")
     log.info(f"[SUCCESS] Baseline + escalador guardados en: {a.output.rstrip('/')}/modelo_baseline_logistica.joblib, scaler.joblib")
     log.info(f"[SUCCESS] Umbrales y configuracion en: {a.output.rstrip('/')}/model_config.json")
 

@@ -22,21 +22,21 @@ PARTE 1 - CLASIFICACION DEL RIESGO DE FALLA
         umbral=0.500 | TEST recall=0.000 precision=0.000 F1=0.000 PR-AUC=0.069 ROC-AUC=0.500 | TRAIN recall=0.000 precision=0.000 PR-AUC=0.069 | 0.00 s
         Diagnostico: Underfitting total (no detecta fallas)
 [INFO] Exp 1: Regresion Logistica: validacion cruzada 5-fold para elegir umbral...
-        umbral=0.713 | TEST recall=0.835 precision=0.571 F1=0.678 PR-AUC=0.727 ROC-AUC=0.970 | TRAIN recall=0.914 precision=0.597 PR-AUC=0.758 | 0.24 s
+        umbral=0.713 | TEST recall=0.835 precision=0.571 F1=0.678 PR-AUC=0.727 ROC-AUC=0.970 | TRAIN recall=0.914 precision=0.597 PR-AUC=0.758 | 0.26 s
         Diagnostico: Generaliza (brecha 0.03) pero no cumple la meta
 [INFO] Exp 2: Random Forest (por defecto): validacion cruzada 5-fold para elegir umbral...
-        umbral=0.233 | TEST recall=0.879 precision=0.376 F1=0.526 PR-AUC=0.620 ROC-AUC=0.955 | TRAIN recall=1.000 precision=0.677 PR-AUC=1.000 | 5.12 s
+        umbral=0.233 | TEST recall=0.879 precision=0.376 F1=0.526 PR-AUC=0.620 ROC-AUC=0.955 | TRAIN recall=1.000 precision=0.677 PR-AUC=1.000 | 5.13 s
         Diagnostico: Overfitting severo (PR-AUC train 1.00 vs test 0.62)
 [INFO] Exp 3: Gradient Boosting (por defecto): validacion cruzada 5-fold para elegir umbral...
-        umbral=0.130 | TEST recall=0.858 precision=0.582 F1=0.694 PR-AUC=0.749 ROC-AUC=0.975 | TRAIN recall=0.983 precision=0.744 PR-AUC=0.980 | 1.06 s
+        umbral=0.130 | TEST recall=0.858 precision=0.582 F1=0.694 PR-AUC=0.749 ROC-AUC=0.975 | TRAIN recall=0.983 precision=0.744 PR-AUC=0.980 | 1.08 s
         Diagnostico: Overfitting severo (PR-AUC train 0.98 vs test 0.75)
 [INFO] GridSearchCV Gradient Boosting: 8 combinaciones x 5 folds (metrica: precision con recall >= 0.87)...
-        Mejores hiperparametros: {'l2_regularization': 1.0, 'learning_rate': 0.1, 'max_leaf_nodes': 7, 'min_samples_leaf': 50, 'n_iter (early stopping)': 130} (precision@recall0.87 CV=0.593, 111.0 s)
+        Mejores hiperparametros: {'l2_regularization': 1.0, 'learning_rate': 0.1, 'max_leaf_nodes': 7, 'min_samples_leaf': 50, 'n_iter (early stopping)': 130} (precision@recall0.87 CV=0.593, 110.7 s)
 [INFO] Exp 4: Gradient Boosting ajustado: validacion cruzada 5-fold para elegir umbral...
-        umbral=0.624 | TEST recall=0.887 precision=0.576 F1=0.699 PR-AUC=0.753 ROC-AUC=0.976 | TRAIN recall=0.973 precision=0.615 PR-AUC=0.848 | 4.71 s
+        umbral=0.624 | TEST recall=0.887 precision=0.576 F1=0.699 PR-AUC=0.753 ROC-AUC=0.976 | TRAIN recall=0.973 precision=0.615 PR-AUC=0.848 | 4.89 s
         Diagnostico: Optimo: cumple meta y brecha controlada (0.10)
 [INFO] Exp 5: Control CON variables con fuga (no se usa): validacion cruzada 5-fold para elegir umbral...
-        umbral=0.699 | TEST recall=0.844 precision=0.714 F1=0.774 PR-AUC=0.786 ROC-AUC=0.983 | TRAIN recall=0.985 precision=0.793 PR-AUC=0.902 | 5.50 s
+        umbral=0.699 | TEST recall=0.844 precision=0.714 F1=0.774 PR-AUC=0.786 ROC-AUC=0.983 | TRAIN recall=0.985 precision=0.793 PR-AUC=0.902 | 5.42 s
         Diagnostico: Overfitting moderado (PR-AUC train 0.90 vs test 0.79)
 [INFO] CV (train) precision con recall>=0.87 -> Exp 1: Regresion Logistica: 0.574
 [INFO] CV (train) precision con recall>=0.87 -> Exp 2: Random Forest (por defecto): 0.379
@@ -60,12 +60,12 @@ PARTE 2 - REGRESION DE VIDA UTIL RESTANTE (ciclos)
 ----------------------------------------------------------------------------------------------------
 [INFO] Filas con target de vida util: train 14,340 | test 4,762 (se omiten 898 filas sin target; el target NO se imputa)
 [INFO] R1: Ridge (baseline lineal): TEST MAE=453.4 ciclos R2=0.885 | TRAIN MAE=447.3 R2=0.888 | 0.06 s
-[INFO] R2: Gradient Boosting Regressor: TEST MAE=441.5 ciclos R2=0.891 | TRAIN MAE=375.8 R2=0.921 | 2.23 s
+[INFO] R2: Gradient Boosting Regressor: TEST MAE=441.5 ciclos R2=0.891 | TRAIN MAE=375.8 R2=0.921 | 2.26 s
 [RESULTADO] Modelo de vida util ganador: R2: Gradient Boosting Regressor (MAE 441.5 ciclos; meta <= 784) -> CUMPLE
 ----------------------------------------------------------------------------------------------------
-[SUCCESS] Modelo de falla serializado en: models/modelo_falla.joblib
-[SUCCESS] Modelo de vida util serializado en: models/modelo_vida_util.joblib
+[SUCCESS] Modelo de falla serializado en: models/modelo_battery_guard.joblib
+[SUCCESS] Modelo de vida util serializado en: models/modelo_battery_guard_vida_util.joblib
 [SUCCESS] Baseline + escalador guardados en: models/modelo_baseline_logistica.joblib, scaler.joblib
 [SUCCESS] Umbrales y configuracion en: models/model_config.json
 [SUCCESS] Reportes en reports/: experimentos_*.csv, matriz_confusion_*.png, curvas_*.png
-[INFO] Tiempo total: 206.6 s
+[INFO] Tiempo total: 209.4 s

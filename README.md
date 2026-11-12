@@ -11,8 +11,8 @@ data/processed/train.csv, test.csv                   75 % / 25 % estratificado, 
 src/data/preprocess.py                               pipeline de preprocesamiento
 src/models/train.py                                  entrenamiento + experimentos + reportes
 src/models/predict.py                                predecir() / predecir_lote() (contrato con el dashboard)
-models/modelo_falla.joblib                           Gradient Boosting ajustado (ganador, clasificación)
-models/modelo_vida_util.joblib                       Gradient Boosting Regressor (vida útil)
+models/modelo_battery_guard.joblib                           Gradient Boosting ajustado (ganador, clasificación)
+models/modelo_battery_guard_vida_util.joblib                       Gradient Boosting Regressor (vida útil)
 models/modelo_baseline_logistica.joblib, scaler.joblib   baseline + StandardScaler
 models/imputer.joblib, feature_schema.json, model_config.json   imputación, esquema y umbrales
 reports/                                             log, tablas de experimentos, matrices y curvas
