@@ -1,0 +1,9 @@
+# BatteryGuard AI - dependencias del motor de IA (Entrega 3)
+# Probado con Python 3.11-3.13
+pandas>=2.2
+numpy>=1.26
+scikit-learn==1.9.1     # mismo version con que se serializaron los .joblib
+joblib>=1.4
+shap>=0.46
+matplotlib>=3.8
+pytest>=8.0

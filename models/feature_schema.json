@@ -1,0 +1,399 @@
+{
+  "numeric_features": [
+    "manufacturing_year",
+    "battery_capacity_kwh",
+    "odometer_km",
+    "vehicle_age_years",
+    "cycle_count",
+    "battery_health_percent",
+    "state_of_charge",
+    "depth_of_discharge",
+    "state_of_health",
+    "cell_voltage_avg",
+    "cell_voltage_std",
+    "pack_voltage",
+    "cell_temperature_avg",
+    "cell_temperature_max",
+    "internal_resistance",
+    "charge_efficiency",
+    "discharge_efficiency",
+    "remaining_capacity",
+    "charging_cycles_last_month",
+    "fast_charge_ratio",
+    "slow_charge_ratio",
+    "average_charge_power_kw",
+    "average_charging_time",
+    "overnight_charging_ratio",
+    "home_charging_ratio",
+    "charging_interruptions",
+    "overcharge_events",
+    "average_speed",
+    "average_trip_distance",
+    "aggressive_acceleration_score",
+    "hard_braking_score",
+    "regenerative_braking_usage",
+    "highway_driving_ratio",
+    "city_driving_ratio",
+    "daily_distance",
+    "average_ambient_temperature",
+    "maximum_temperature",
+    "minimum_temperature",
+    "humidity",
+    "altitude",
+    "dust_exposure",
+    "last_service_days",
+    "cooling_system_health",
+    "firmware_updates",
+    "previous_faults",
+    "maintenance_score",
+    "voltage_imbalance",
+    "temperature_variance",
+    "sensor_fault_count",
+    "BMS_warning_count",
+    "abnormal_voltage_events",
+    "charging_quality_score",
+    "driving_stress_score"
+  ],
+  "categorical_features": [
+    "vehicle_brand",
+    "vehicle_model",
+    "vehicle_type",
+    "battery_manufacturer",
+    "battery_chemistry",
+    "drive_type",
+    "fleet_or_private",
+    "terrain_type"
+  ],
+  "leakage_excluded": [
+    "thermal_runaway_risk",
+    "thermal_health_score",
+    "aging_score",
+    "battery_stress_index",
+    "capacity_loss_percent"
+  ],
+  "numeric_ranges": {
+    "manufacturing_year": [
+      2015.0,
+      2024.0
+    ],
+    "battery_capacity_kwh": [
+      25.0,
+      149.01
+    ],
+    "odometer_km": [
+      500.0,
+      450000.0
+    ],
+    "vehicle_age_years": [
+      1.37,
+      11.55
+    ],
+    "cycle_count": [
+      173.0,
+      3369.0
+    ],
+    "battery_health_percent": [
+      47.03,
+      99.8
+    ],
+    "state_of_charge": [
+      2.0,
+      100.0
+    ],
+    "depth_of_discharge": [
+      5.23,
+      90.34
+    ],
+    "state_of_health": [
+      47.77,
+      100.0
+    ],
+    "cell_voltage_avg": [
+      3.061,
+      3.85
+    ],
+    "cell_voltage_std": [
+      0.0,
+      0.06
+    ],
+    "pack_voltage": [
+      223.23,
+      400.4
+    ],
+    "cell_temperature_avg": [
+      -14.23,
+      65.09
+    ],
+    "cell_temperature_max": [
+      -4.95,
+      86.98
+    ],
+    "internal_resistance": [
+      0.03,
+      1.123
+    ],
+    "charge_efficiency": [
+      92.11,
+      98.97
+    ],
+    "discharge_efficiency": [
+      90.48,
+      98.93
+    ],
+    "remaining_capacity": [
+      15.03,
+      146.46
+    ],
+    "charging_cycles_last_month": [
+      1.0,
+      41.0
+    ],
+    "fast_charge_ratio": [
+      0.0,
+      0.97
+    ],
+    "slow_charge_ratio": [
+      0.0,
+      0.99
+    ],
+    "average_charge_power_kw": [
+      3.47,
+      313.54
+    ],
+    "average_charging_time": [
+      8.0,
+      600.0
+    ],
+    "overnight_charging_ratio": [
+      0.0,
+      0.94
+    ],
+    "home_charging_ratio": [
+      0.0,
+      1.0
+    ],
+    "charging_interruptions": [
+      0.0,
+      6.0
+    ],
+    "overcharge_events": [
+      0.0,
+      5.0
+    ],
+    "average_speed": [
+      10.0,
+      119.79
+    ],
+    "average_trip_distance": [
+      1.0,
+      144.09
+    ],
+    "aggressive_acceleration_score": [
+      0.01,
+      99.99
+    ],
+    "hard_braking_score": [
+      0.0,
+      100.0
+    ],
+    "regenerative_braking_usage": [
+      0.7,
+      100.0
+    ],
+    "highway_driving_ratio": [
+      0.0,
+      1.0
+    ],
+    "city_driving_ratio": [
+      0.0,
+      1.0
+    ],
+    "daily_distance": [
+      3.0,
+      205.3
+    ],
+    "average_ambient_temperature": [
+      -25.0,
+      48.0
+    ],
+    "maximum_temperature": [
+      -19.54,
+      67.96
+    ],
+    "minimum_temperature": [
+      -42.4,
+      44.58
+    ],
+    "humidity": [
+      5.0,
+      100.0
+    ],
+    "altitude": [
+      0.15,
+      2621.29
+    ],
+    "dust_exposure": [
+      0.01,
+      99.99
+    ],
+    "last_service_days": [
+      24.1,
+      1500.0
+    ],
+    "cooling_system_health": [
+      57.52,
+      99.7
+    ],
+    "firmware_updates": [
+      0.0,
+      30.0
+    ],
+    "previous_faults": [
+      0.0,
+      6.0
+    ],
+    "maintenance_score": [
+      14.53,
+      100.0
+    ],
+    "voltage_imbalance": [
+      0.02,
+      86.55
+    ],
+    "temperature_variance": [
+      0.0,
+      32.94
+    ],
+    "sensor_fault_count": [
+      0.0,
+      6.0
+    ],
+    "BMS_warning_count": [
+      0.0,
+      7.0
+    ],
+    "abnormal_voltage_events": [
+      0.0,
+      5.0
+    ],
+    "charging_quality_score": [
+      43.72,
+      100.0
+    ],
+    "driving_stress_score": [
+      0.0,
+      88.7
+    ]
+  },
+  "categories": {
+    "vehicle_brand": [
+      "Audi",
+      "BMW",
+      "BYD",
+      "Ford",
+      "GM",
+      "Honda",
+      "Hyundai",
+      "Kia",
+      "Lucid",
+      "MG",
+      "Mahindra",
+      "Mercedes-Benz",
+      "Nissan",
+      "Porsche",
+      "Renault",
+      "Rivian",
+      "Tata",
+      "Tesla",
+      "Volkswagen",
+      "Volvo"
+    ],
+    "vehicle_model": [
+      "Air",
+      "Ariya",
+      "Atto 3",
+      "BE 6",
+      "Cadillac Lyriq",
+      "Chevrolet Bolt",
+      "Comet EV",
+      "Dolphin",
+      "EQA",
+      "EQE",
+      "EV6",
+      "EV9",
+      "EX30",
+      "F-150 Lightning",
+      "ID.3",
+      "ID.4",
+      "Ioniq 5",
+      "Kona Electric",
+      "Leaf",
+      "Macan Electric",
+      "Megane E-Tech",
+      "Model 3",
+      "Model S",
+      "Model Y",
+      "Mustang Mach-E",
+      "Nexon EV",
+      "Prologue",
+      "Q4 e-tron",
+      "R1S",
+      "R1T",
+      "Seal",
+      "Taycan",
+      "Tiago EV",
+      "XC40 Recharge",
+      "XUV400",
+      "ZS EV",
+      "Zoe",
+      "e-tron GT",
+      "e:N1",
+      "i4",
+      "iX",
+      "iX1"
+    ],
+    "vehicle_type": [
+      "Crossover",
+      "Hatchback",
+      "SUV",
+      "Sedan",
+      "Truck",
+      "Van"
+    ],
+    "battery_manufacturer": [
+      "BYD Battery",
+      "CATL",
+      "Envision AESC",
+      "Guoxuan",
+      "LG Energy Solution",
+      "Northvolt",
+      "Panasonic",
+      "SK On"
+    ],
+    "battery_chemistry": [
+      "LFP",
+      "LMO",
+      "LTO",
+      "NCA",
+      "NMC"
+    ],
+    "drive_type": [
+      "AWD",
+      "FWD",
+      "RWD"
+    ],
+    "fleet_or_private": [
+      "Fleet",
+      "Private"
+    ],
+    "terrain_type": [
+      "Coastal",
+      "Desert",
+      "Flat",
+      "Hilly",
+      "Mountainous"
+    ]
+  },
+  "random_state": 42,
+  "test_size": 0.25
+}
