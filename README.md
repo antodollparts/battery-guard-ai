@@ -1,22 +1,53 @@
-# BatteryGuard AI — Motor de IA (Entrega 3)
+# BatteryGuard AI — Modelo de IA
 
 Sistema de IA que estima el **riesgo de falla** y la **vida útil restante (ciclos)** de las baterías de una flota de vehículos eléctricos.
 Grupo LITIID71 · Fundamentos de Inteligencia Artificial.
 
+## Integrantes del Equipo
+
+* **Antonella Junco** - [@antodollparts](https://github.com/antodollparts/)
+* **Amerika Carbajal** - [@Amerikita](https://github.com/Amerikita)
+* **Victor Canché** - [@usuario3](https://github.com/victor332-af)
+* **Diego Alexander** - [@DiegoMarin025](https://github.com/DiegoMarin025)
+* **Leobardo Mex** -[@YondaimeMex](https://github.com/YondaimeMex)
+
 ## Estructura
 
 ```
-data/raw/ev_battery_failure_prediction_Dataset.csv   CSV original (20,000 × 70), sin modificar
-data/processed/train.csv, test.csv                   75 % / 25 % estratificado, imputado, sin fuga
-src/data/preprocess.py                               pipeline de preprocesamiento
-src/models/train.py                                  entrenamiento + experimentos + reportes
-src/models/predict.py                                predecir() / predecir_lote() (contrato con el dashboard)
-models/modelo_battery_guard.joblib                           Gradient Boosting ajustado (ganador, clasificación)
-models/modelo_battery_guard_vida_util.joblib                       Gradient Boosting Regressor (vida útil)
-models/modelo_baseline_logistica.joblib, scaler.joblib   baseline + StandardScaler
-models/imputer.joblib, feature_schema.json, model_config.json   imputación, esquema y umbrales
-reports/                                             log, tablas de experimentos, matrices y curvas
-tests/test_predict.py                                pruebas del contrato de inferencia
+.
+├── data/
+│   ├── raw/
+│   │   └── ev_battery_failure_prediction_Dataset.csv   # CSV original (20,000 × 70), sin modificar
+│   └── processed/
+│       ├── train.csv                                    # 75 % estratificado, imputado, sin fuga
+│       └── test.csv                                     # 25 % estratificado, imputado, sin fuga
+├── models/
+│   ├── feature_schema.json                              # esquema de variables
+│   ├── imputer.joblib                                   # imputación
+│   ├── model_config.json                                # umbrales y configuración
+│   ├── modelo_baseline_logistica.joblib                 # baseline (regresión logística)
+│   ├── modelo_battery_guard.joblib                      # Gradient Boosting ajustado (ganador, clasificación)
+│   ├── modelo_battery_guard_vida_util.joblib            # Gradient Boosting Regressor (vida útil)
+│   └── scaler.joblib                                    # StandardScaler del baseline
+├── reports/                                             # log, tablas de experimentos, matrices y curvas
+│   ├── curva_captura_fallas.*
+│   ├── curvas_precision_recall.*
+│   ├── experimentos_clasificacion.*
+│   ├── experimentos_vida_util.*
+│   ├── matrices_confusion.json
+│   ├── matriz_confusion_*.*
+│   └── train_log.txt
+├── src/
+│   ├── data/
+│   │   └── preprocess.py                                # pipeline de preprocesamiento
+│   └── models/
+│       ├── train.py                                     # entrenamiento + experimentos + reportes
+│       └── predict.py                                   # predecir() / predecir_lote() (contrato con el dashboard)
+├── tests/
+│   └── test_predict.py                                  # pruebas del contrato de inferencia
+├── .gitignore
+├── README.md
+└── requirements.txt
 ```
 
 ## Reproducir (un solo comando)
