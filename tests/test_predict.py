@@ -56,3 +56,36 @@ def test_lote_20000_menor_a_10s():
     assert time.perf_counter() - t0 < 10
     assert len(out) == 20000
     assert out["probabilidad_falla"].is_monotonic_decreasing
+
+
+def test_rechaza_booleanos_infinitos_y_limites_fisicos():
+    r_bool = predecir({"battery_health_percent": True})
+    assert r_bool["status"] == "error"
+
+    r_inf = predecir({"cycle_count": float("inf")})
+    assert r_inf["status"] == "error"
+
+    r_phys = predecir({"average_speed": -10, "humidity": 120, "daily_distance": -5})
+    assert r_phys["status"] == "error"
+    assert len(r_phys["errores"]) == 3
+
+
+def test_rechaza_solo_claves_desconocidas_y_umbral_invalido():
+    assert predecir({"variable_inexistente": 123})["status"] == "error"
+    assert predecir({"battery_health_percent": float("nan")})["status"] == "error"
+    assert predecir(BATERIA_RIESGO, umbral_alto=1.5)["status"] == "error"
+    assert predecir(BATERIA_RIESGO, umbral_alto=True)["status"] == "error"
+
+
+def test_lote_vacio_y_parcial_con_na_categorico():
+    vacio = predecir_lote(pd.DataFrame())
+    assert vacio.empty
+    assert {"probabilidad_falla", "nivel_riesgo", "vida_util_restante_ciclos"} <= set(vacio.columns)
+
+    parcial = pd.DataFrame({
+        "vehicle_brand": ["Tesla", pd.NA, 123],
+        "battery_health_percent": [50.0, "no_valido", 92.0],
+    })
+    out = predecir_lote(parcial)
+    assert len(out) == 3
+    assert out["probabilidad_falla"].between(0, 1).all()
