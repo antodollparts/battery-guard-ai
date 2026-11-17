@@ -89,7 +89,7 @@
       11.55
     ],
     "cycle_count": [
-      173.0,
+      209.0,
       3369.0
     ],
     "battery_health_percent": [
@@ -98,11 +98,11 @@
     ],
     "state_of_charge": [
       2.0,
-      100.0
+      99.97
     ],
     "depth_of_discharge": [
-      5.23,
-      90.34
+      5.8,
+      90.32
     ],
     "state_of_health": [
       47.77,
@@ -117,7 +117,7 @@
       0.06
     ],
     "pack_voltage": [
-      223.23,
+      226.31,
       400.4
     ],
     "cell_temperature_avg": [
@@ -134,7 +134,7 @@
     ],
     "charge_efficiency": [
       92.11,
-      98.97
+      98.94
     ],
     "discharge_efficiency": [
       90.48,
@@ -142,7 +142,7 @@
     ],
     "remaining_capacity": [
       15.03,
-      146.46
+      146.2
     ],
     "charging_cycles_last_month": [
       1.0,
@@ -157,7 +157,7 @@
       0.99
     ],
     "average_charge_power_kw": [
-      3.47,
+      4.28,
       313.54
     ],
     "average_charging_time": [
@@ -178,26 +178,26 @@
     ],
     "overcharge_events": [
       0.0,
-      5.0
+      4.0
     ],
     "average_speed": [
       10.0,
-      119.79
+      119.77
     ],
     "average_trip_distance": [
-      1.0,
+      1.02,
       144.09
     ],
     "aggressive_acceleration_score": [
       0.01,
-      99.99
+      99.98
     ],
     "hard_braking_score": [
       0.0,
       100.0
     ],
     "regenerative_braking_usage": [
-      0.7,
+      0.71,
       100.0
     ],
     "highway_driving_ratio": [
@@ -218,18 +218,18 @@
     ],
     "maximum_temperature": [
       -19.54,
-      67.96
+      67.84
     ],
     "minimum_temperature": [
       -42.4,
-      44.58
+      44.31
     ],
     "humidity": [
       5.0,
       100.0
     ],
     "altitude": [
-      0.15,
+      0.25,
       2621.29
     ],
     "dust_exposure": [
@@ -241,7 +241,7 @@
       1500.0
     ],
     "cooling_system_health": [
-      57.52,
+      58.06,
       99.7
     ],
     "firmware_updates": [
@@ -258,7 +258,7 @@
     ],
     "voltage_imbalance": [
       0.02,
-      86.55
+      86.19
     ],
     "temperature_variance": [
       0.0,
@@ -282,7 +282,7 @@
     ],
     "driving_stress_score": [
       0.0,
-      88.7
+      88.41
     ]
   },
   "categories": {

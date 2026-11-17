@@ -1,5 +1,5 @@
 [INFO] Ejecutando pipeline de preprocesamiento (src/data/preprocess.py)...
-[INFO] Cargando dataset crudo: data\raw\ev_battery_failure_prediction_Dataset.csv
+[INFO] Cargando dataset crudo: data/raw/ev_battery_failure_prediction_Dataset.csv
 [INFO] 20,000 registros, 70 columnas | duplicados eliminados: 0
 [INFO] Fallas: 1,384 (6.92%)
 [INFO] Vacios por columna: min 0.00% - max 4.94%
@@ -19,53 +19,54 @@ BatteryGuard AI - Entrenamiento de modelos (Entrega 3)
 PARTE 1 - CLASIFICACION DEL RIESGO DE FALLA
 ----------------------------------------------------------------------------------------------------
 [INFO] Exp 0: Baseline ingenuo (siempre 'sin falla'): validacion cruzada 5-fold para elegir umbral...
-        umbral=0.500 | TEST recall=0.000 precision=0.000 F1=0.000 PR-AUC=0.069 ROC-AUC=0.500 | TRAIN recall=0.000 precision=0.000 PR-AUC=0.069 | 0.00 s
+        umbral=0.500 | TEST recall=0.000 precision=0.000 F1=0.000 PR-AUC=0.069 ROC-AUC=0.500 Brier=0.0692 | TRAIN recall=0.000 precision=0.000 PR-AUC=0.069 | 0.00 s
         Diagnostico: Underfitting total (no detecta fallas)
 [INFO] Exp 1: Regresion Logistica: validacion cruzada 5-fold para elegir umbral...
-        umbral=0.713 | TEST recall=0.835 precision=0.571 F1=0.678 PR-AUC=0.727 ROC-AUC=0.970 | TRAIN recall=0.914 precision=0.597 PR-AUC=0.758 | 0.73 s
+        umbral=0.713 | TEST recall=0.835 precision=0.571 F1=0.678 PR-AUC=0.727 ROC-AUC=0.970 Brier=0.0587 | TRAIN recall=0.914 precision=0.597 PR-AUC=0.758 | 0.16 s
         Diagnostico: Generaliza (brecha 0.03) pero no cumple la meta
 [INFO] Exp 2: Random Forest (por defecto): validacion cruzada 5-fold para elegir umbral...
-        umbral=0.233 | TEST recall=0.879 precision=0.376 F1=0.526 PR-AUC=0.620 ROC-AUC=0.955 | TRAIN recall=1.000 precision=0.677 PR-AUC=1.000 | 1.79 s
+        umbral=0.237 | TEST recall=0.873 precision=0.384 F1=0.533 PR-AUC=0.618 ROC-AUC=0.955 Brier=0.0418 | TRAIN recall=1.000 precision=0.686 PR-AUC=1.000 | 1.44 s
         Diagnostico: Overfitting severo (PR-AUC train 1.00 vs test 0.62)
 [INFO] Exp 3: Gradient Boosting (por defecto): validacion cruzada 5-fold para elegir umbral...
-        umbral=0.130 | TEST recall=0.858 precision=0.582 F1=0.694 PR-AUC=0.749 ROC-AUC=0.975 | TRAIN recall=0.983 precision=0.744 PR-AUC=0.980 | 1.13 s
+        umbral=0.130 | TEST recall=0.858 precision=0.582 F1=0.694 PR-AUC=0.749 ROC-AUC=0.975 Brier=0.0300 | TRAIN recall=0.983 precision=0.744 PR-AUC=0.980 | 1.19 s
         Diagnostico: Overfitting severo (PR-AUC train 0.98 vs test 0.75)
-[INFO] GridSearchCV Gradient Boosting: 8 combinaciones x 5 folds (metrica: precision con recall >= 0.87)...
-        Mejores hiperparametros: {'l2_regularization': 1.0, 'learning_rate': 0.1, 'max_leaf_nodes': 7, 'min_samples_leaf': 50, 'n_iter (early stopping)': 130} (precision@recall0.87 CV=0.593, 116.3 s)
+[INFO] GridSearchCV Gradient Boosting: 16 combinaciones x 5 folds (metrica: precision con recall >= 0.87)...
+        Mejores hiperparametros: {'l2_regularization': 5.0, 'learning_rate': 0.05, 'max_leaf_nodes': 7, 'min_samples_leaf': 50, 'class_weight': None, 'n_iter (early stopping)': 287} (precision@recall0.87 CV=0.609, 67.4 s)
 [INFO] Exp 4: Gradient Boosting ajustado: validacion cruzada 5-fold para elegir umbral...
-        umbral=0.624 | TEST recall=0.887 precision=0.576 F1=0.699 PR-AUC=0.753 ROC-AUC=0.976 | TRAIN recall=0.973 precision=0.615 PR-AUC=0.848 | 6.94 s
-        Diagnostico: Optimo: cumple meta y brecha controlada (0.10)
+        umbral=0.190 | TEST recall=0.867 precision=0.617 F1=0.721 PR-AUC=0.768 ROC-AUC=0.978 Brier=0.0284 | TRAIN recall=0.958 precision=0.659 PR-AUC=0.881 | 3.16 s
+        Diagnostico: Overfitting moderado (PR-AUC train 0.88 vs test 0.77)
 [INFO] Exp 5: Control CON variables con fuga (no se usa): validacion cruzada 5-fold para elegir umbral...
-        umbral=0.699 | TEST recall=0.844 precision=0.714 F1=0.774 PR-AUC=0.786 ROC-AUC=0.983 | TRAIN recall=0.985 precision=0.793 PR-AUC=0.902 | 7.96 s
-        Diagnostico: Overfitting moderado (PR-AUC train 0.90 vs test 0.79)
+        umbral=0.228 | TEST recall=0.853 precision=0.670 F1=0.751 PR-AUC=0.793 ROC-AUC=0.982 Brier=0.0266 | TRAIN recall=0.970 precision=0.767 PR-AUC=0.924 | 3.49 s
+        Diagnostico: Overfitting moderado (PR-AUC train 0.92 vs test 0.79)
 [INFO] CV (train) precision con recall>=0.87 -> Exp 1: Regresion Logistica: 0.574
-[INFO] CV (train) precision con recall>=0.87 -> Exp 2: Random Forest (por defecto): 0.379
+[INFO] CV (train) precision con recall>=0.87 -> Exp 2: Random Forest (por defecto): 0.384
 [INFO] CV (train) precision con recall>=0.87 -> Exp 3: Gradient Boosting (por defecto): 0.573
-[INFO] CV (train) precision con recall>=0.87 -> Exp 4: Gradient Boosting ajustado: 0.593
+[INFO] CV (train) precision con recall>=0.87 -> Exp 4: Gradient Boosting ajustado: 0.604
 ----------------------------------------------------------------------------------------------------
 [RESULTADO] Modelo ganador: Exp 4: Gradient Boosting ajustado
-[INFO] Umbral riesgo ALTO = 0.624 | umbral riesgo MEDIO = 0.289 (recall CV 0.97)
+[INFO] Umbral riesgo ALTO = 0.190 | umbral riesgo MEDIO = 0.070 (recall CV 0.97)
 [RESULTADOS EN TEST SET - modelo ganador, clase 1 = falla]
                   precision    recall  f1-score   support
     
-     0 sin falla      0.991     0.951     0.971      4654
-         1 falla      0.576     0.887     0.699       346
+     0 sin falla      0.990     0.960     0.975      4654
+         1 falla      0.617     0.867     0.721       346
     
-        accuracy                          0.947      5000
-       macro avg      0.784     0.919     0.835      5000
-    weighted avg      0.963     0.947     0.952      5000
-[INFO] Matriz de confusion (TN, FP / FN, TP): [4428, 226, 39, 307]
+        accuracy                          0.954      5000
+       macro avg      0.804     0.914     0.848      5000
+    weighted avg      0.964     0.954     0.957      5000
+[INFO] Matriz de confusion (TN, FP / FN, TP): [4468, 186, 46, 300]
 ----------------------------------------------------------------------------------------------------
 PARTE 2 - REGRESION DE VIDA UTIL RESTANTE (ciclos)
 ----------------------------------------------------------------------------------------------------
 [INFO] Filas con target de vida util: train 14,340 | test 4,762 (se omiten 898 filas sin target; el target NO se imputa)
-[INFO] R1: Ridge (baseline lineal): TEST MAE=453.4 ciclos R2=0.885 | TRAIN MAE=447.3 R2=0.888 | 0.41 s
-[INFO] R2: Gradient Boosting Regressor: TEST MAE=441.5 ciclos R2=0.891 | TRAIN MAE=375.8 R2=0.921 | 2.10 s
-[RESULTADO] Modelo de vida util ganador: R2: Gradient Boosting Regressor (MAE 441.5 ciclos; meta <= 784) -> CUMPLE
+[INFO] GridSearchCV RUL Regressor: {'l2_regularization': 1.0, 'learning_rate': 0.03, 'max_leaf_nodes': 31, 'min_samples_leaf': 20, 'n_iter (early stopping)': 278} (CV MAE=446.9 ciclos)
+[INFO] R1: Ridge (baseline lineal): CV MAE=452.1 | TEST MAE=453.4 ciclos R2=0.885 | TRAIN MAE=447.3 R2=0.888 | 0.10 s
+[INFO] R2: Gradient Boosting Regressor: CV MAE=446.9 | TEST MAE=440.7 ciclos R2=0.891 | TRAIN MAE=373.9 R2=0.922 | 4.67 s
+[RESULTADO] Modelo de vida util ganador: R2: Gradient Boosting Regressor (MAE 440.7 ciclos; meta <= 784) -> CUMPLE
 ----------------------------------------------------------------------------------------------------
 [SUCCESS] Modelo de falla serializado en: models/modelo_battery_guard.joblib
 [SUCCESS] Modelo de vida util serializado en: models/modelo_battery_guard_vida_util.joblib
 [SUCCESS] Baseline + escalador guardados en: models/modelo_baseline_logistica.joblib, scaler.joblib
 [SUCCESS] Umbrales y configuracion en: models/model_config.json
 [SUCCESS] Reportes en reports/: experimentos_*.csv, matriz_confusion_*.png, curvas_*.png
-[INFO] Tiempo total: 227.5 s
+[INFO] Tiempo total: 201.2 s

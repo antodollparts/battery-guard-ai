@@ -27,12 +27,21 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
+import tempfile
 import time
 import warnings
 from pathlib import Path
 
 import joblib
+
+if "MPLCONFIGDIR" not in os.environ:
+    _mpl_home = Path.home() / ".matplotlib"
+    _mpl_parent = _mpl_home if _mpl_home.exists() else Path.home()
+    if not os.access(_mpl_parent, os.W_OK):
+        os.environ["MPLCONFIGDIR"] = tempfile.gettempdir()
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -43,11 +52,13 @@ from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import (HistGradientBoostingClassifier, HistGradientBoostingRegressor,
                               RandomForestClassifier)
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression, Ridge
-from sklearn.metrics import (ConfusionMatrixDisplay, make_scorer, average_precision_score, classification_report,
-                             confusion_matrix, f1_score, mean_absolute_error, precision_recall_curve,
-                             precision_score, r2_score, recall_score, roc_auc_score)
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_predict
+from sklearn.metrics import (ConfusionMatrixDisplay, average_precision_score, brier_score_loss,
+                             classification_report, confusion_matrix, f1_score, make_scorer,
+                             mean_absolute_error, precision_recall_curve, precision_score,
+                             r2_score, recall_score, roc_auc_score)
+from sklearn.model_selection import GridSearchCV, KFold, StratifiedKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -103,6 +114,7 @@ def clf_metrics(y, proba, thr) -> dict:
         "accuracy": float((pred == y).mean()),
         "roc_auc": roc_auc_score(y, proba) if len(np.unique(proba)) > 1 else 0.5,
         "pr_auc": average_precision_score(y, proba),
+        "brier": brier_score_loss(y, proba),
         "flagged": int(pred.sum()),
     }
 
@@ -140,9 +152,9 @@ def run_classifier(name, model, Xtr, ytr, Xte, yte) -> dict:
         "cv_precision_at_recall": precision_at_recall(ytr, oof) if oof.std() > 0 else 0.0, "proba_test": p_te, "model": model,
     }
     log.info(f"        umbral={thr:.3f} | TEST recall={m_te['recall']:.3f} precision={m_te['precision']:.3f} "
-             f"F1={m_te['f1']:.3f} PR-AUC={m_te['pr_auc']:.3f} ROC-AUC={m_te['roc_auc']:.3f} | "
-             f"TRAIN recall={m_tr['recall']:.3f} precision={m_tr['precision']:.3f} PR-AUC={m_tr['pr_auc']:.3f} "
-             f"| {t_train:.2f} s")
+             f"F1={m_te['f1']:.3f} PR-AUC={m_te['pr_auc']:.3f} ROC-AUC={m_te['roc_auc']:.3f} "
+             f"Brier={m_te['brier']:.4f} | TRAIN recall={m_tr['recall']:.3f} "
+             f"precision={m_tr['precision']:.3f} PR-AUC={m_tr['pr_auc']:.3f} | {t_train:.2f} s")
     log.info(f"        Diagnostico: {res['diagnostico']}")
     return res
 
@@ -155,14 +167,17 @@ def precision_at_recall(y_true, proba, recall_min: float = RECALL_TARGET_CV) -> 
 
 
 def tune_gradient_boosting(enc, Xtr, ytr) -> tuple[Pipeline, dict]:
+    # Sin class_weight="balanced": con desbalance 6.9%, pesar 13.5x infla las probabilidades
+    # predichas (Brier ~0.050 vs ~0.029) sin mejorar el ordenamiento. Entrenar sin pesos mantiene
+    # probabilidades calibradas y SHAP TreeExplainer compatible; el umbral se ajusta via CV.
     pipe = Pipeline([("prep", enc), ("model", HistGradientBoostingClassifier(
-        class_weight="balanced", max_iter=500, early_stopping=True, validation_fraction=0.1,
+        class_weight=None, max_iter=500, early_stopping=True, validation_fraction=0.1,
         n_iter_no_change=20, random_state=RANDOM_STATE))])
     grid = {
-        "model__learning_rate": [0.03, 0.1],
-        "model__max_leaf_nodes": [7, 15],
+        "model__learning_rate": [0.03, 0.05],
+        "model__max_leaf_nodes": [5, 7],
         "model__min_samples_leaf": [50, 100],
-        "model__l2_regularization": [1.0],
+        "model__l2_regularization": [5.0, 10.0],
     }
     scorer = make_scorer(precision_at_recall, response_method="predict_proba")
     log.info(f"[INFO] GridSearchCV Gradient Boosting: {np.prod([len(v) for v in grid.values()])} "
@@ -171,9 +186,29 @@ def tune_gradient_boosting(enc, Xtr, ytr) -> tuple[Pipeline, dict]:
     t0 = time.perf_counter()
     gs.fit(Xtr, ytr)
     best = {k.replace("model__", ""): v for k, v in gs.best_params_.items()}
+    best["class_weight"] = None
     best["n_iter (early stopping)"] = int(gs.best_estimator_.named_steps["model"].n_iter_)
     log.info(f"        Mejores hiperparametros: {best} (precision@recall0.87 CV={gs.best_score_:.3f}, "
              f"{time.perf_counter()-t0:.1f} s)")
+    return gs.best_estimator_, best
+
+
+def tune_gradient_boosting_regressor(enc, Xr, yr, cv_reg) -> tuple[Pipeline, dict]:
+    """Ajusta HistGradientBoostingRegressor con early stopping y validacion cruzada 5-fold (sin mirar test)."""
+    pipe = Pipeline([("prep", enc), ("model", HistGradientBoostingRegressor(
+        max_iter=500, early_stopping=True, validation_fraction=0.1,
+        n_iter_no_change=20, random_state=RANDOM_STATE))])
+    grid = {
+        "model__learning_rate": [0.03, 0.05],
+        "model__max_leaf_nodes": [15, 31],
+        "model__min_samples_leaf": [20, 30],
+        "model__l2_regularization": [1.0, 5.0],
+    }
+    gs = GridSearchCV(pipe, grid, scoring="neg_mean_absolute_error", cv=cv_reg, n_jobs=-1)
+    gs.fit(Xr, yr)
+    best = {k.replace("model__", ""): v for k, v in gs.best_params_.items()}
+    best["n_iter (early stopping)"] = int(gs.best_estimator_.named_steps["model"].n_iter_)
+    log.info(f"[INFO] GridSearchCV RUL Regressor: {best} (CV MAE={-gs.best_score_:.1f} ciclos)")
     return gs.best_estimator_, best
 
 
@@ -217,11 +252,13 @@ def plot_capture(yte, proba, thr, path):
     captured = np.cumsum(yte.values[order]) / yte.sum()
     n = np.arange(1, len(yte) + 1)
     k = int((proba >= thr).sum())
+    pct_fleet = k / len(yte) * 100
+    pct_captured = (captured[k - 1] * 100) if k > 0 else 0.0
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
     ax.plot(n / len(yte) * 100, captured * 100, lw=2, label="Gradient Boosting")
     ax.plot([0, 100], [0, 100], ls=":", c="gray", label="Inspeccion al azar")
-    ax.scatter([k / len(yte) * 100], [captured[k - 1] * 100], c="red", zorder=5,
-               label=f"Umbral {thr:.2f}: inspeccionar {k} ({k/len(yte):.1%}) -> {captured[k-1]:.1%} fallas")
+    ax.scatter([pct_fleet], [pct_captured], c="red", zorder=5,
+               label=f"Umbral {thr:.2f}: inspeccionar {k} ({k/len(yte):.1%}) -> {pct_captured:.1f}% fallas")
     ax.set_xlabel("% de la flota inspeccionada (ordenada por riesgo)")
     ax.set_ylabel("% de fallas capturadas")
     ax.set_title("Curva de captura de fallas (grafica 3 del dashboard)", fontsize=10)
@@ -277,7 +314,7 @@ def main() -> None:
     results.append(run_classifier("Exp 1: Regresion Logistica",
                                   Pipeline([("prep", make_encoder(num, cat, scale=True)),
                                             ("model", LogisticRegression(C=1.0, class_weight="balanced",
-                                                                         max_iter=5000))]),
+                                                                         max_iter=5000, random_state=RANDOM_STATE))]),
                                   Xtr, ytr, Xte, yte))
     results.append(run_classifier("Exp 2: Random Forest (por defecto)",
                                   Pipeline([("prep", make_encoder(num, cat, scale=False)),
@@ -293,18 +330,28 @@ def main() -> None:
     results.append(run_classifier("Exp 4: Gradient Boosting ajustado", best_gb, Xtr, ytr, Xte, yte))
     results[-1]["hiperparametros"] = best_params
 
-    # Exp 5 (control de fuga): mismas filas y mismo split, agregando las 5 variables excluidas
-    raw = pd.read_csv(ROOT / a.raw)
-    leak_tr = raw.loc[raw["battery_serial"].isin(_serials(tr, raw)), :]
-    leak_te = raw.loc[raw["battery_serial"].isin(_serials(te, raw)), :]
+    # Exp 5 (control de fuga): exactamente mismas filas, orden e imputacion que Exp 1-4, agregando LEAKAGE_COLS
+    from src.data.preprocess import anonymize
+    raw = pd.read_csv(ROOT / a.raw).drop_duplicates()
+    raw["battery_id_anon"] = raw["battery_serial"].map(anonymize)
+    raw_idx = raw.set_index("battery_id_anon")
+    leak_tr = raw_idx.loc[tr["battery_id_anon"]].reset_index()
+    leak_te = raw_idx.loc[te["battery_id_anon"]].reset_index()
+    for col in cat:
+        for part in (leak_tr, leak_te):
+            part[col] = part[col].where(part[col].notna(), np.nan)
+            mask = part[col].notna()
+            if mask.any():
+                part.loc[mask, col] = part.loc[mask, col].astype(str)
     num_leak = num + LEAKAGE_COLS
+    leak_params = {k: v for k, v in best_params.items() if not k.startswith("n_iter")}
     gb_leak = Pipeline([("prep", ColumnTransformer([
-        ("num", "passthrough", num_leak),
+        ("num", SimpleImputer(strategy="median"), num_leak),
         ("cat", Pipeline([("imp", _mode_imputer()), ("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]), cat)])),
-        ("model", HistGradientBoostingClassifier(class_weight="balanced", max_iter=500,
+        ("model", HistGradientBoostingClassifier(max_iter=500,
                                                  random_state=RANDOM_STATE,
                                                  early_stopping=True, n_iter_no_change=20,
-                                                 **{k: v for k, v in best_params.items() if not k.startswith('n_iter')}))])
+                                                 **leak_params))])
     results.append(run_classifier("Exp 5: Control CON variables con fuga (no se usa)", gb_leak,
                                   leak_tr[num_leak + cat], leak_tr[TARGET_CLF],
                                   leak_te[num_leak + cat], leak_te[TARGET_CLF]))
@@ -345,27 +392,30 @@ def main() -> None:
     log.info(f"[INFO] Filas con target de vida util: train {len(rtr):,} | test {len(rte):,} "
              f"(se omiten {len(tr)-len(rtr)+len(te)-len(rte)} filas sin target; el target NO se imputa)")
     meta_mae = 0.10 * rtr[TARGET_REG].mean()
+    cv_reg = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    best_r2_pipe, _ = tune_gradient_boosting_regressor(
+        make_encoder(num, cat, scale=False), rtr[num + cat], rtr[TARGET_REG], cv_reg
+    )
     reg_results = []
     for name, model in [
         ("R1: Ridge (baseline lineal)", Pipeline([("prep", make_encoder(num, cat, scale=True)),
                                                    ("model", Ridge(alpha=1.0))])),
-        ("R2: Gradient Boosting Regressor", Pipeline([("prep", make_encoder(num, cat, scale=False)),
-                                                       ("model", HistGradientBoostingRegressor(
-                                                           learning_rate=0.05, max_iter=500, max_leaf_nodes=31,
-                                                           min_samples_leaf=30, l2_regularization=1.0,
-                                                           random_state=RANDOM_STATE))])),
+        ("R2: Gradient Boosting Regressor", best_r2_pipe),
     ]:
+        oof_reg = cross_val_predict(model, rtr[num + cat], rtr[TARGET_REG], cv=cv_reg, n_jobs=-1)
+        cv_mae = mean_absolute_error(rtr[TARGET_REG], oof_reg)
         t0 = time.perf_counter()
         model.fit(rtr[num + cat], rtr[TARGET_REG])
         tt = time.perf_counter() - t0
         p_tr, p_te = model.predict(rtr[num + cat]), model.predict(rte[num + cat])
-        r = {"experimento": name, "model": model, "t_entrenamiento_s": tt,
+        r = {"experimento": name, "model": model, "t_entrenamiento_s": tt, "cv_mae": cv_mae,
              "train": {"mae": mean_absolute_error(rtr[TARGET_REG], p_tr), "r2": r2_score(rtr[TARGET_REG], p_tr)},
              "test": {"mae": mean_absolute_error(rte[TARGET_REG], p_te), "r2": r2_score(rte[TARGET_REG], p_te)}}
         reg_results.append(r)
-        log.info(f"[INFO] {name}: TEST MAE={r['test']['mae']:.1f} ciclos R2={r['test']['r2']:.3f} | "
+        log.info(f"[INFO] {name}: CV MAE={cv_mae:.1f} | TEST MAE={r['test']['mae']:.1f} ciclos R2={r['test']['r2']:.3f} | "
                  f"TRAIN MAE={r['train']['mae']:.1f} R2={r['train']['r2']:.3f} | {tt:.2f} s")
-    reg_winner = min(reg_results, key=lambda r: r["test"]["mae"])
+    # Seleccion SIN mirar el test: menor MAE en validacion cruzada 5-fold sobre train
+    reg_winner = min(reg_results, key=lambda r: r["cv_mae"])
     log.info(f"[RESULTADO] Modelo de vida util ganador: {reg_winner['experimento']} "
              f"(MAE {reg_winner['test']['mae']:.1f} ciclos; meta <= {meta_mae:.0f}) -> "
              f"{'CUMPLE' if reg_winner['test']['mae'] <= meta_mae else 'NO CUMPLE'}")
@@ -400,7 +450,8 @@ def main() -> None:
                      "t_inferencia_ms_por_bateria": round(r["t_inferencia_ms_por_bateria"], 4),
                      "diagnostico": r["diagnostico"]})
     pd.DataFrame(rows).to_csv(rep_dir / "experimentos_clasificacion.csv", index=False)
-    pd.DataFrame([{"experimento": r["experimento"], "test_mae": round(r["test"]["mae"], 1),
+    pd.DataFrame([{"experimento": r["experimento"], "cv_mae": round(r["cv_mae"], 1),
+                   "test_mae": round(r["test"]["mae"], 1),
                    "test_r2": round(r["test"]["r2"], 4), "train_mae": round(r["train"]["mae"], 1),
                    "train_r2": round(r["train"]["r2"], 4), "t_entrenamiento_s": round(r["t_entrenamiento_s"], 2)}
                   for r in reg_results]).to_csv(rep_dir / "experimentos_vida_util.csv", index=False)
@@ -410,14 +461,7 @@ def main() -> None:
     log.info(f"[INFO] Tiempo total: {time.perf_counter() - t_global:.1f} s")
 
 
-def _serials(processed: pd.DataFrame, raw: pd.DataFrame) -> set:
-    from src.data.preprocess import anonymize
-    m = raw["battery_serial"].map(anonymize)
-    return set(raw.loc[m.isin(processed["battery_id_anon"]), "battery_serial"])
-
-
 def _mode_imputer():
-    from sklearn.impute import SimpleImputer
     return SimpleImputer(strategy="most_frequent")
 
 

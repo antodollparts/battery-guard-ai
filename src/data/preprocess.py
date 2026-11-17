@@ -70,6 +70,8 @@ def load_raw(path: Path) -> pd.DataFrame:
         raise ValueError(f"Faltan columnas en el CSV: {sorted(missing)}")
     if df[TARGET_CLF].isna().any():
         raise ValueError("El target battery_failure tiene vacios.")
+    if not set(df[TARGET_CLF].unique()).issubset({0, 1}):
+        raise ValueError("El target battery_failure debe contener solo valores binarios 0 y 1.")
     return df
 
 
@@ -119,11 +121,21 @@ def run(data_path: Path, out_dir: Path, models_dir: Path) -> dict:
           f"Train {len(train):,} ({int(train[TARGET_CLF].sum())} fallas) | "
           f"Test {len(test):,} ({int(test[TARGET_CLF].sum())} fallas)")
 
+    def _normalize_inputs(part: pd.DataFrame) -> pd.DataFrame:
+        sub = part[num_cols + cat_cols].copy()
+        for c in cat_cols:
+            # Evita pd.NA o tipos mixtos en pandas 3.x al pasar por SimpleImputer
+            sub[c] = sub[c].where(sub[c].notna(), np.nan)
+            mask = sub[c].notna()
+            if mask.any():
+                sub.loc[mask, c] = sub.loc[mask, c].astype(str)
+        return sub
+
     imputer = build_imputer(num_cols, cat_cols)
-    imputer.fit(train[num_cols + cat_cols])  # SOLO train
+    imputer.fit(_normalize_inputs(train))  # SOLO train
 
     def transform(part: pd.DataFrame) -> pd.DataFrame:
-        X = imputer.transform(part[num_cols + cat_cols])
+        X = imputer.transform(_normalize_inputs(part))
         X.index = part.index
         meta = part[["battery_id_anon", TARGET_CLF, TARGET_REG]]
         return pd.concat([meta, X], axis=1)
@@ -139,9 +151,10 @@ def run(data_path: Path, out_dir: Path, models_dir: Path) -> dict:
     test_p.to_csv(out_dir / "test.csv", index=False)
     joblib.dump(imputer, models_dir / "imputer.joblib")
 
-    # Rangos validos por variable (para RNF-02: validar entradas en predecir())
-    ranges = {c: [float(df[c].min()), float(df[c].max())] for c in num_cols}
-    categories = {c: sorted(df[c].dropna().unique().tolist()) for c in cat_cols}
+    # Rangos validos por variable (para RNF-02: validar entradas en predecir()).
+    # Se calculan SOLO con train (antes se usaba df completo, filtrando min/max/categorias del test).
+    ranges = {c: [float(train[c].min()), float(train[c].max())] for c in num_cols}
+    categories = {c: sorted(train[c].dropna().astype(str).unique().tolist()) for c in cat_cols}
     schema = {
         "numeric_features": num_cols,
         "categorical_features": cat_cols,

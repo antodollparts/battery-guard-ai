@@ -14,6 +14,8 @@ Las entradas invalidas devuelven status "error" con mensajes claros en vez de ro
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 import time
 from pathlib import Path
 
@@ -41,22 +43,53 @@ UMBRAL_MEDIO: float = CONFIG["umbral_medio"]
 LIMITES_DUROS = {
     "battery_health_percent": (0, 100), "state_of_health": (0, 100), "state_of_charge": (0, 100),
     "depth_of_discharge": (0, 100), "charge_efficiency": (0, 100), "discharge_efficiency": (0, 100),
+    "humidity": (0, 100), "cooling_system_health": (0, 100), "maintenance_score": (0, 100),
+    "charging_quality_score": (0, 100), "driving_stress_score": (0, 100),
+    "aggressive_acceleration_score": (0, 100), "hard_braking_score": (0, 100),
+    "regenerative_braking_usage": (0, 100), "dust_exposure": (0, 100),
+    "manufacturing_year": (1990, 2100),
     "fast_charge_ratio": (0, 1), "slow_charge_ratio": (0, 1), "overnight_charging_ratio": (0, 1),
     "home_charging_ratio": (0, 1), "highway_driving_ratio": (0, 1), "city_driving_ratio": (0, 1),
 }
-NO_NEGATIVAS = [c for c in NUM if any(k in c for k in ("count", "faults", "events", "cycle", "km",
-                                                          "years", "interruptions", "days", "updates",
-                                                          "resistance", "capacity"))]
+NO_NEGATIVAS = [c for c in NUM if any(k in c for k in (
+    "count", "faults", "events", "cycle", "km", "years", "interruptions", "days", "updates",
+    "resistance", "capacity", "distance", "speed", "power", "time", "voltage", "imbalance", "variance",
+))]
 
 _explainer = None  # SHAP se inicializa la primera vez que se necesita
+
+
+def _ensure_writable_mplconfig() -> None:
+    """Evita demoras o errores de matplotlib al importar SHAP si ~/.matplotlib no es escribible."""
+    if "MPLCONFIGDIR" not in os.environ:
+        mpl_home = Path.home() / ".matplotlib"
+        parent = mpl_home if mpl_home.exists() else Path.home()
+        if not os.access(parent, os.W_OK):
+            os.environ["MPLCONFIGDIR"] = tempfile.gettempdir()
 
 
 def _get_explainer():
     global _explainer
     if _explainer is None:
+        _ensure_writable_mplconfig()
         import shap
         _explainer = shap.TreeExplainer(MODELO_FALLA.named_steps["model"])
     return _explainer
+
+
+def _validar_umbral(umbral_alto: float | None) -> tuple[float | None, str | None]:
+    """Valida que el umbral opcional sea numerico finito en [0, 1]."""
+    if umbral_alto is None:
+        return None, None
+    if isinstance(umbral_alto, bool):
+        return None, f"umbral_alto debe ser numerico entre 0 y 1 (recibido: {umbral_alto!r})."
+    try:
+        u = float(umbral_alto)
+    except (TypeError, ValueError):
+        return None, f"umbral_alto debe ser numerico entre 0 y 1 (recibido: {umbral_alto!r})."
+    if np.isnan(u) or np.isinf(u) or not 0.0 <= u <= 1.0:
+        return None, f"umbral_alto = {umbral_alto!r} debe estar en el rango [0, 1]."
+    return u, None
 
 
 def nivel_riesgo(prob: float, umbral_alto: float | None = None) -> str:
@@ -81,12 +114,20 @@ def validar_entrada(entrada: dict) -> tuple[dict, list[str], list[str]]:
     for col in NUM:
         if col not in entrada or entrada[col] is None or entrada[col] == "":
             continue
-        try:
-            v = float(entrada[col])
-        except (TypeError, ValueError):
-            errores.append(f"'{col}' debe ser numerico (recibido: {entrada[col]!r}).")
+        raw_val = entrada[col]
+        # bool hereda de int en Python (float(True) == 1.0); se rechaza explicitamente como no numerico
+        if isinstance(raw_val, bool):
+            errores.append(f"'{col}' debe ser numerico (recibido booleano: {raw_val!r}).")
             continue
-        if np.isnan(v) or np.isinf(v):
+        try:
+            v = float(raw_val)
+        except (TypeError, ValueError):
+            errores.append(f"'{col}' debe ser numerico (recibido: {raw_val!r}).")
+            continue
+        if np.isinf(v):
+            errores.append(f"'{col}' no puede ser infinito (recibido: {raw_val!r}).")
+            continue
+        if np.isnan(v):
             continue
         if col in LIMITES_DUROS:
             lo, hi = LIMITES_DUROS[col]
@@ -102,12 +143,15 @@ def validar_entrada(entrada: dict) -> tuple[dict, list[str], list[str]]:
                                 f"la prediccion puede ser menos confiable.")
         limpia[col] = v
     for col in CAT:
-        if col not in entrada or entrada[col] in (None, ""):
+        if col not in entrada or entrada[col] in (None, "") or pd.isna(entrada[col]):
             continue
         val = str(entrada[col])
         if val not in SCHEMA["categories"][col]:
             advertencias.append(f"'{col}' = '{val}' no aparece en el historial; se trata como categoria desconocida.")
         limpia[col] = val
+    if not errores and not limpia:
+        errores.append("Debe proporcionar al menos una variable conocida y valida para predecir.")
+        return limpia, errores, advertencias
     faltantes = [c for c in FEATURES if c not in limpia]
     if faltantes and not errores:
         advertencias.append(f"{len(faltantes)} de {len(FEATURES)} variables no se capturaron y se "
@@ -117,8 +161,14 @@ def validar_entrada(entrada: dict) -> tuple[dict, list[str], list[str]]:
 
 def _preparar(df: pd.DataFrame) -> pd.DataFrame:
     """Mismo preprocesamiento que en entrenamiento: columnas en orden + imputacion del train."""
-    df = df.reindex(columns=FEATURES)
+    df = df.reindex(columns=FEATURES).copy()
     df[NUM] = df[NUM].apply(pd.to_numeric, errors="coerce")
+    # Normaliza categoricas para evitar TypeError de pandas 3 (pd.NA / tipos mixtos) en SimpleImputer
+    for col in CAT:
+        df[col] = df[col].where(df[col].notna(), np.nan)
+        mask = df[col].notna()
+        if mask.any():
+            df.loc[mask, col] = df.loc[mask, col].astype(str)
     X = IMPUTADOR.transform(df)
     return X[FEATURES]
 
@@ -155,6 +205,9 @@ def predecir(entrada: dict, umbral_alto: float | None = None, explicar: bool = T
     """
     t0 = time.perf_counter()
     limpia, errores, advertencias = validar_entrada(entrada)
+    umbral_valido, err_umbral = _validar_umbral(umbral_alto)
+    if err_umbral:
+        errores.append(err_umbral)
     if errores:
         return {"status": "error", "errores": errores, "advertencias": advertencias,
                 "tiempo_ms": round((time.perf_counter() - t0) * 1000, 1)}
@@ -164,7 +217,7 @@ def predecir(entrada: dict, umbral_alto: float | None = None, explicar: bool = T
         # 3. Inferencia de ambos modelos
         prob = float(MODELO_FALLA.predict_proba(X)[0, 1])
         vida = float(MODELO_VIDA.predict(X)[0])
-        nivel = nivel_riesgo(prob, umbral_alto)
+        nivel = nivel_riesgo(prob, umbral_valido)
         factores = _top_factores(X) if explicar else []
     except Exception as exc:  # el dashboard nunca debe romperse (RNF-02)
         return {"status": "error", "errores": [f"No se pudo calcular el riesgo: {exc}"],
@@ -180,7 +233,7 @@ def predecir(entrada: dict, umbral_alto: float | None = None, explicar: bool = T
         "vida_util_restante_ciclos": int(round(max(vida, 0))),
         "top_factores": [f["variable"] for f in factores],
         "top_factores_detalle": factores,
-        "umbral_usado": round(UMBRAL_ALTO if umbral_alto is None else umbral_alto, 4),
+        "umbral_usado": round(UMBRAL_ALTO if umbral_valido is None else umbral_valido, 4),
         "tiempo_ms": round((time.perf_counter() - t0) * 1000, 1),
         "advertencias": advertencias,
         "status": "success",
@@ -189,12 +242,20 @@ def predecir(entrada: dict, umbral_alto: float | None = None, explicar: bool = T
 
 def predecir_lote(df: pd.DataFrame, umbral_alto: float | None = None) -> pd.DataFrame:
     """Puntua toda la flota (p. ej. las 20,000 baterias) para la tabla priorizada. Meta: <= 10 s."""
-    X = _preparar(df.copy())
+    umbral_valido, err_umbral = _validar_umbral(umbral_alto)
+    if err_umbral:
+        raise ValueError(err_umbral)
+    out = df.copy()
+    if out.empty:
+        out["probabilidad_falla"] = pd.Series(dtype=float)
+        out["nivel_riesgo"] = pd.Series(dtype=object)
+        out["vida_util_restante_ciclos"] = pd.Series(dtype=int)
+        return out
+    X = _preparar(out)
     prob = MODELO_FALLA.predict_proba(X)[:, 1]
     vida = np.clip(MODELO_VIDA.predict(X), 0, None).round().astype(int)
-    out = df.copy()
     out["probabilidad_falla"] = prob.round(4)
-    out["nivel_riesgo"] = [nivel_riesgo(p, umbral_alto) for p in prob]
+    out["nivel_riesgo"] = [nivel_riesgo(p, umbral_valido) for p in prob]
     out["vida_util_restante_ciclos"] = vida
     return out.sort_values("probabilidad_falla", ascending=False)
 

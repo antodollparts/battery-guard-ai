@@ -1,14 +1,15 @@
 {
   "modelo_falla": "Exp 4: Gradient Boosting ajustado",
   "hiperparametros": {
-    "l2_regularization": 1.0,
-    "learning_rate": 0.1,
+    "l2_regularization": 5.0,
+    "learning_rate": 0.05,
     "max_leaf_nodes": 7,
     "min_samples_leaf": 50,
-    "n_iter (early stopping)": 130
+    "class_weight": null,
+    "n_iter (early stopping)": 287
   },
-  "umbral_alto": 0.6235963677980749,
-  "umbral_medio": 0.2887459799856271,
+  "umbral_alto": 0.1896937398752698,
+  "umbral_medio": 0.06970755423545086,
   "modelo_vida_util": "R2: Gradient Boosting Regressor",
   "features": [
     "manufacturing_year",
@@ -139,13 +140,14 @@
     "terrain_type"
   ],
   "test_metrics": {
-    "recall": 0.8872832369942196,
-    "precision": 0.575984990619137,
-    "f1": 0.6985210466439136,
-    "accuracy": 0.947,
-    "roc_auc": 0.9756260386366629,
-    "pr_auc": 0.7526660609247011,
-    "flagged": 533
+    "recall": 0.8670520231213873,
+    "precision": 0.6172839506172839,
+    "f1": 0.7211538461538461,
+    "accuracy": 0.9536,
+    "roc_auc": 0.9776312749800656,
+    "pr_auc": 0.7681058243095168,
+    "brier": 0.02844965799693144,
+    "flagged": 486
   },
-  "test_mae_vida_util": 441.494504711321
+  "test_mae_vida_util": 440.74666842241885
 }
